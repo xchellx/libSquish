@@ -401,3 +401,61 @@ void ComputeMSE( u8 const *rgba, int width, int height, u8 const *dxt, int flags
 }
 
 } // namespace squish
+
+void squish_CompressMasked( squish::u8 const* rgba, int mask, void* block, int flags, float* metric )
+{
+    squish::CompressMasked( rgba, mask, block, flags, metric );
+}
+
+void squish_Compress( squish::u8 const* rgba, void* block, int flags, float* metric )
+{
+    squish::Compress( rgba, block, flags, metric );
+}
+
+void squish_Decompress( squish::u8* rgba, void const* block, int flags )
+{
+    squish::Decompress( rgba, block, flags );
+}
+
+int squish_GetStorageRequirements( int width, int height, int flags )
+{
+    return squish::GetStorageRequirements( width, height, flags );
+}
+
+void squish_CompressImagePitch( squish::u8 const* rgba, int width, int height, int pitch, void* blocks, int flags, float* metric )
+{
+    squish::CompressImage( rgba, width, height, pitch, blocks, flags, metric );
+}
+
+void squish_CompressImage( squish::u8 const* rgba, int width, int height, void* blocks, int flags, float* metric )
+{
+    squish::CompressImage( rgba, width, height, blocks, flags, metric );
+}
+
+void squish_DecompressImagePitch( squish::u8* rgba, int width, int height, int pitch, void const* blocks, int flags )
+{
+    squish::DecompressImage( rgba, width, height, pitch, blocks, flags );
+}
+
+void squish_DecompressImage( squish::u8* rgba, int width, int height, void const* blocks, int flags )
+{
+    squish::DecompressImage( rgba, width, height, blocks, flags );
+}
+
+void squish_ComputeMSEPitch(squish::u8 const *rgba, int width, int height, int pitch, squish::u8 const *dxt, int flags, double *colourMSE, double *alphaMSE)
+{
+    double tmp_colourMSE = *colourMSE;
+    double tmp_alphaMSE = *alphaMSE;
+    squish::ComputeMSE(rgba, width, height, pitch, dxt, flags, tmp_colourMSE, tmp_alphaMSE);
+    *colourMSE = tmp_colourMSE;
+    *alphaMSE = tmp_alphaMSE;
+}
+
+void squish_ComputeMSE(squish::u8 const *rgba, int width, int height, squish::u8 const *dxt, int flags, double *colourMSE, double *alphaMSE)
+{
+    double tmp_colourMSE = *colourMSE;
+    double tmp_alphaMSE = *alphaMSE;
+    squish::ComputeMSE(rgba, width, height, dxt, flags, tmp_colourMSE, tmp_alphaMSE);
+    *colourMSE = tmp_colourMSE;
+    *alphaMSE = tmp_alphaMSE;
+}
