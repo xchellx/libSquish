@@ -27,12 +27,14 @@
 #define SQUISH_H
 
 //! All squish API functions live in this namespace.
+#ifdef __cplusplus
 namespace squish {
 
 // -----------------------------------------------------------------------------
 
 //! Typedef a quantity that is a single unsigned byte.
 typedef unsigned char u8;
+#endif
 
 // -----------------------------------------------------------------------------
 
@@ -71,6 +73,7 @@ enum
 
 // -----------------------------------------------------------------------------
 
+#ifdef __cplusplus
 /*! @brief Compresses a 4x4 block of pixels.
 
     @param rgba   The rgba values of the 16 source pixels.
@@ -305,6 +308,7 @@ void ComputeMSE(u8 const *rgba, int width, int height, u8 const *dxt, int flags,
 // -----------------------------------------------------------------------------
 
 } // namespace squish
+#endif
 
 #ifdef __cplusplus
 extern "C"
@@ -314,22 +318,22 @@ extern "C"
 #define DEFAULT_METRIC 0
 #define DEFAULT_MASK 0xffff
 
-void squish_CompressMasked( squish::u8 const* rgba, int mask, void* block, int flags, float* metric );
+void squish_CompressMasked( unsigned char const* rgba, int mask, void* block, int flags, float* metric );
 
-void squish_Compress( squish::u8 const* rgba, void* block, int flags, float* metric );
+void squish_Compress( unsigned char const* rgba, void* block, int flags, float* metric );
 
-void squish_Decompress( squish::u8* rgba, void const* block, int flags );
+void squish_Decompress( unsigned char* rgba, void const* block, int flags );
 
 int squish_GetStorageRequirements( int width, int height, int flags );
 
-void squish_CompressImagePitch( squish::u8 const* rgba, int width, int height, int pitch, void* blocks, int flags, float* metric );
-void squish_CompressImage( squish::u8 const* rgba, int width, int height, void* blocks, int flags, float* metric );
+void squish_CompressImagePitch( unsigned char const* rgba, int width, int height, int pitch, void* blocks, int flags, float* metric );
+void squish_CompressImage( unsigned char const* rgba, int width, int height, void* blocks, int flags, float* metric );
 
-void squish_DecompressImagePitch( squish::u8* rgba, int width, int height, int pitch, void const* blocks, int flags );
-void squish_DecompressImage( squish::u8* rgba, int width, int height, void const* blocks, int flags );
+void squish_DecompressImagePitch( unsigned char* rgba, int width, int height, int pitch, void const* blocks, int flags );
+void squish_DecompressImage( unsigned char* rgba, int width, int height, void const* blocks, int flags );
 
-void squish_ComputeMSEPitch(squish::u8 const *rgba, int width, int height, int pitch, squish::u8 const *dxt, int flags, double *colourMSE, double *alphaMSE);
-void squish_ComputeMSE(squish::u8 const *rgba, int width, int height, squish::u8 const *dxt, int flags, double *colourMSE, double *alphaMSE);
+void squish_ComputeMSEPitch(unsigned char const *rgba, int width, int height, int pitch, unsigned char const *dxt, int flags, double *colourMSE, double *alphaMSE);
+void squish_ComputeMSE(unsigned char const *rgba, int width, int height, unsigned char const *dxt, int flags, double *colourMSE, double *alphaMSE);
 
 #ifdef __cplusplus
 }

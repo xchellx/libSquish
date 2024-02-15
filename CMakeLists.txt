@@ -9,44 +9,32 @@
 #   Unix and VS: SSE2 support is enabled by default
 #    use BUILD_SQUISH_WITH_SSE2 and BUILD_SQUISH_WITH_ALTIVEC to override
 
-PROJECT(squish)
+cmake_minimum_required(VERSION 3.28, FATAL_ERROR)
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.3)
+project(squish LANGUAGES CXX)
 
-OPTION(BUILD_SQUISH_WITH_OPENMP "Build with OpenMP." ON)
+option(BUILD_SQUISH_WITH_OPENMP "Build with OpenMP." ON)
 
-OPTION(BUILD_SQUISH_WITH_SSE2 "Build with SSE2." ON)
-OPTION(BUILD_SQUISH_WITH_ALTIVEC "Build with Altivec." OFF)
+option(BUILD_SQUISH_WITH_SSE2 "Build with SSE2." ON)
+option(BUILD_SQUISH_WITH_ALTIVEC "Build with Altivec." OFF)
 
-OPTION(BUILD_SHARED_LIBS "Build shared libraries." OFF)
+option(SQUISH_STATIC "Build static library." ON)
 
-OPTION(BUILD_SQUISH_EXTRA "Build extra source code." OFF)
+option(BUILD_SQUISH_EXTRA "Build extra source code." OFF)
 
-IF (BUILD_SQUISH_WITH_OPENMP)
-   FIND_PACKAGE(OpenMP)
-   IF (OPENMP_FOUND)
-       SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-       ADD_DEFINITIONS(-DSQUISH_USE_OPENMP)
-   ENDIF()
-ENDIF()
+if(SQUISH_STATIC)
+  set(SQUISH_BUILD_TYPE STATIC)
+  set(SQUISH_LINK_TYPE ARCHIVE)
+else()
+  set(SQUISH_BUILD_TYPE SHARED)
+  set(SQUISH_LINK_TYPE LIBRARY)
+endif()
 
-IF (CMAKE_GENERATOR STREQUAL "Xcode")
-    SET(CMAKE_OSX_ARCHITECTURES "i386;ppc")
-ELSE (CMAKE_GENERATOR STREQUAL "Xcode")
-    IF (BUILD_SQUISH_WITH_SSE2 AND NOT WIN32)
-        ADD_DEFINITIONS(-DSQUISH_USE_SSE=2 -msse2)
-    ENDIF (BUILD_SQUISH_WITH_SSE2 AND NOT WIN32)
-    IF (BUILD_SQUISH_WITH_ALTIVEC AND NOT WIN32)
-        ADD_DEFINITIONS(-DSQUISH_USE_ALTIVEC=1 -maltivec)
-    ENDIF (BUILD_SQUISH_WITH_ALTIVEC AND NOT WIN32)
-ENDIF (CMAKE_GENERATOR STREQUAL "Xcode")
-
-SET(SQUISH_HDRS
+set(SQUISH_HDRS
     squish.h
     )
 
-SET(SQUISH_SRCS
+set(SQUISH_SRCS
     alpha.cpp
     alpha.h
     clusterfit.cpp
@@ -71,47 +59,68 @@ SET(SQUISH_SRCS
     squish.cpp
     )
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+add_library(squish ${SQUISH_BUILD_TYPE} ${SQUISH_SRCS} ${SQUISH_HDRS})
 
-ADD_LIBRARY(squish ${SQUISH_SRCS} ${SQUISH_HDRS})
+target_include_directories(squish PUBLIC ${PROJECT_SOURCE_DIR})
 
-SET_TARGET_PROPERTIES(
+target_link_libraries(squish PRIVATE -lstdc++ -lm)
+
+if(BUILD_SQUISH_WITH_OPENMP)
+    if(NOT TARGET OpenMP::OpenMP_CXX)
+        find_package(Threads REQUIRED)
+        add_library(OpenMP::OpenMP_CXX IMPORTED INTERFACE)
+        set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_COMPILE_OPTIONS ${OpenMP_CXX_FLAGS})
+        set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_LINK_LIBRARIES ${OpenMP_CXX_FLAGS} Threads::Threads)
+    endif()
+    target_link_libraries(squish PRIVATE OpenMP::OpenMP_CXX)
+    target_compile_definitions(squish PUBLIC "SQUISH_USE_OPENMP")
+endif()
+
+if(BUILD_SQUISH_WITH_SSE2)
+    target_compile_definitions(squish PUBLIC "SQUISH_USE_SSE=2")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+        target_compile_options(squish PRIVATE -msse2)
+    endif()
+endif()
+
+if(BUILD_SQUISH_WITH_ALTIVEC)
+    target_compile_definitions(squish PUBLIC "SQUISH_USE_ALTIVEC=1")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+        target_compile_options(squish PRIVATE -maltivec)
+    endif()
+endif()
+
+set_target_properties(
     squish PROPERTIES
     PUBLIC_HEADER "${SQUISH_HDRS}"
     VERSION 0.0
     SOVERSION 0.0
     DEBUG_POSTFIX "d"
-    XCODE_ATTRIBUTE_GCC_PREPROCESSOR_DEFINITIONS "$(SQUISH_CPP_$(CURRENT_ARCH))"
-    XCODE_ATTRIBUTE_OTHER_CFLAGS "$(SQUISH_CFLAGS_$(CURRENT_ARCH))"
-    XCODE_ATTRIBUTE_SQUISH_CPP_i386 "SQUISH_USE_SSE=2"
-    XCODE_ATTRIBUTE_SQUISH_CFLAGS_i386 ""
-    XCODE_ATTRIBUTE_SQUISH_CPP_ppc "SQUISH_USE_ALTIVEC=1"
-    XCODE_ATTRIBUTE_SQUISH_CFLAGS_ppc "-maltivec"
     )
 
-IF (BUILD_SQUISH_EXTRA)
-    SET(SQUISHTEST_SRCS extra/squishtest.cpp)
+if(BUILD_SQUISH_EXTRA)
+    set(SQUISHTEST_SRCS extra/squishtest.cpp)
 
-    ADD_EXECUTABLE(squishtest ${SQUISHTEST_SRCS})
-    SET_TARGET_PROPERTIES(squishtest PROPERTIES DEBUG_POSTFIX "d")
-    TARGET_LINK_LIBRARIES(squishtest squish)
+    add_executable(squishtest ${SQUISHTEST_SRCS})
+    set_target_properties(squishtest PROPERTIES DEBUG_POSTFIX "d")
+    target_link_libraries(squishtest squish)
 
-    SET(SQUISHPNG_SRCS extra/squishpng.cpp)
+    set(SQUISHPNG_SRCS extra/squishpng.cpp)
 
-    FIND_PACKAGE(PNG)
+    find_package(PNG)
 
-    IF (PNG_FOUND)
-        SET(CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES)
-        INCLUDE_DIRECTORIES(${PNG_INCLUDE_DIR})
-        ADD_EXECUTABLE(squishpng ${SQUISHPNG_SRCS})
-        SET_TARGET_PROPERTIES(squishpng PROPERTIES DEBUG_POSTFIX "d")
-        TARGET_LINK_LIBRARIES(squishpng squish ${PNG_LIBRARIES})
-    ENDIF (PNG_FOUND)
-ENDIF (BUILD_SQUISH_EXTRA)
+    if(PNG_FOUND)
+        set(CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES)
+        add_executable(squishpng ${SQUISHPNG_SRCS})
+        target_include_directories(squishpng PRIVATE ${PNG_INCLUDE_DIR})
+        set_target_properties(squishpng PROPERTIES DEBUG_POSTFIX "d")
+        target_link_libraries(squishpng squish ${PNG_LIBRARIES})
+    endif(PNG_FOUND)
+endif(BUILD_SQUISH_EXTRA)
 
-INSTALL(
+install(
     TARGETS squish
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
+    ${SQUISH_LINK_TYPE} DESTINATION lib
+    RUNTIME DESTINATION bin
     PUBLIC_HEADER DESTINATION include
     )
