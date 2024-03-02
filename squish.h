@@ -315,8 +315,8 @@ extern "C"
 {
 #endif
 
-#define DEFAULT_METRIC 0
-#define DEFAULT_MASK 0xffff
+#define SQUISH_DEFAULT_METRIC 0
+#define SQUISH_DEFAULT_MASK 0xffff
 
 void squish_CompressMasked( unsigned char const* rgba, int mask, void* block, int flags, float* metric );
 
