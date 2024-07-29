@@ -13,9 +13,9 @@ cmake_minimum_required(VERSION 3.28, FATAL_ERROR)
 
 project(squish LANGUAGES CXX)
 
-option(BUILD_SQUISH_WITH_OPENMP "Build with OpenMP." ON)
+option(BUILD_SQUISH_WITH_OPENMP "Build with OpenMP." OFF)
 
-option(BUILD_SQUISH_WITH_SSE2 "Build with SSE2." ON)
+option(BUILD_SQUISH_WITH_SSE2 "Build with SSE2." OFF)
 option(BUILD_SQUISH_WITH_ALTIVEC "Build with Altivec." OFF)
 
 option(SQUISH_STATIC "Build static library." ON)
@@ -66,12 +66,9 @@ target_include_directories(squish PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(squish PRIVATE -lstdc++ -lm)
 
 if(BUILD_SQUISH_WITH_OPENMP)
-    if(NOT TARGET OpenMP::OpenMP_CXX)
-        find_package(Threads REQUIRED)
-        add_library(OpenMP::OpenMP_CXX IMPORTED INTERFACE)
-        set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_COMPILE_OPTIONS ${OpenMP_CXX_FLAGS})
-        set_property(TARGET OpenMP::OpenMP_CXX PROPERTY INTERFACE_LINK_LIBRARIES ${OpenMP_CXX_FLAGS} Threads::Threads)
-    endif()
+    find_package(Threads REQUIRED)
+    find_package(OpenMP REQUIRED)
+    target_link_libraries(squish PRIVATE Threads::Threads)
     target_link_libraries(squish PRIVATE OpenMP::OpenMP_CXX)
     target_compile_definitions(squish PUBLIC "SQUISH_USE_OPENMP")
 endif()
@@ -114,8 +111,8 @@ if(BUILD_SQUISH_EXTRA)
         add_executable(squishpng ${SQUISHPNG_SRCS})
         target_include_directories(squishpng PRIVATE ${PNG_INCLUDE_DIR})
         set_target_properties(squishpng PROPERTIES DEBUG_POSTFIX "d")
-        target_link_libraries(squishpng squish ${PNG_LIBRARIES})
-    endif(PNG_FOUND)
+        target_link_libraries(squishpng PRIVATE squish PNG::PNG)
+    endif()
 endif(BUILD_SQUISH_EXTRA)
 
 install(
